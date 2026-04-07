@@ -221,3 +221,60 @@ helm install arc-runner-set \
 cd terraform
 terraform destroy
 ```
+
+## Secrets Inventory
+
+All tokens and credentials used across the infrastructure. **Never commit actual values.**
+
+### Proxmox
+
+| Secret | Format | Where to create | Used in |
+|---|---|---|---|
+| Proxmox API Token | `root@pam!tokenname=uuid` | Proxmox → Datacenter → Permissions → API Tokens | `terraform.tfvars` → `proxmox_api_token` |
+
+### Cloudflare
+
+| Secret | Where to create | Used in |
+|---|---|---|
+| CF Access Service Token ID | [Zero Trust → Access → Service Auth](https://one.dash.cloudflare.com/) → Service Tokens | `CF_ACCESS_CLIENT_ID` env var for `cf-access-proxy.py` |
+| CF Access Service Token Secret | Same as above (shown once on creation) | `CF_ACCESS_CLIENT_SECRET` env var for `cf-access-proxy.py` |
+| CF API Token | [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) | GitHub org secret `CLOUDFLARE_API_TOKEN` |
+| CF Account ID | Cloudflare dashboard → any domain → Overview sidebar | GitHub org secret `CLOUDFLARE_ACCOUNT_ID` |
+| CF Zone ID | Cloudflare dashboard → domain → Overview sidebar | GitHub org secret `CLOUDFLARE_ZONE_ID` |
+
+**CF API Token permissions required:**
+
+| Permission | Scope | Used for |
+|---|---|---|
+| Zone → DNS → Edit | overnit.com | Workers custom domains, DNS record management |
+| Account → Cloudflare Pages → Edit | All accounts | Legacy (can be removed if not using Pages) |
+| Account → Workers Scripts → Edit | All accounts | Deploying Workers via `wrangler deploy` |
+| Zone → Workers Routes → Edit | overnit.com | Binding Workers to custom domain routes |
+
+### GitHub
+
+| Secret | Where to create | Used in |
+|---|---|---|
+| GitHub PAT (Classic) | [github.com/settings/tokens](https://github.com/settings/tokens) | ARC runner-set helm install (`githubConfigSecret.github_token`) |
+
+**GitHub PAT scopes required:** `repo`, `workflow`, `admin:org`
+
+### GitHub Org Secrets (Overnit)
+
+Configured at [github.com/organizations/Overnit/settings/secrets/actions](https://github.com/organizations/Overnit/settings/secrets/actions):
+
+| Secret Name | Source | Used by |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | CF API Token (see above) | `landing-page` deploy workflow |
+| `CLOUDFLARE_ACCOUNT_ID` | CF Account ID | `landing-page` deploy workflow |
+| `CLOUDFLARE_ZONE_ID` | CF Zone ID | `landing-page` deploy workflow (DNS cleanup) |
+
+### Where Secrets Live at Runtime
+
+| Location | Secrets stored |
+|---|---|
+| `terraform.tfvars` (git-ignored) | Proxmox API token, endpoint |
+| Environment variables (shell) | CF Access service token ID/secret |
+| GitHub org secrets | CF API token, account ID, zone ID |
+| Kubernetes secret (arc-runners ns) | GitHub PAT for ARC |
+| `~/.kube/k3s-config` (local file) | k3s kubeconfig with cluster certs |
