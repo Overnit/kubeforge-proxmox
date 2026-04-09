@@ -35,3 +35,9 @@ k3s_disk_size     = 32
 k3s_datastore_id   = "local-lvm"
 k3s_network_bridge = "vmbr0"
 k3s_vm_start_id    = 200
+
+# --- GitHub Actions ARC ---
+# URL for the repository or org (e.g., https://github.com/Overnit or https://github.com/Overnit/landing-page)
+github_config_url = "https://github.com/Overnit"
+# PAT (ghp_...)
+github_pat        = "ghp_xxxxxxxxxxxx"

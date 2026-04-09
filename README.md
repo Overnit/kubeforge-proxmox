@@ -1,4 +1,4 @@
-# Homelab Proxmox
+# KubeForge Proxmox
 
 Infrastructure as Code for provisioning and managing a k3s Kubernetes cluster on Proxmox VE using Terraform.
 
@@ -60,8 +60,8 @@ Infrastructure as Code for provisioning and managing a k3s Kubernetes cluster on
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Overnit/homelab-proxmox.git
-cd homelab-proxmox
+git clone https://github.com/Overnit/kubeforge-proxmox.git
+cd kubeforge-proxmox
 ```
 
 ### 2. Configure
@@ -92,23 +92,17 @@ terraform plan
 terraform apply
 ```
 
-### 5. Install k3s
+### 5. Automation Magic
 
-```bash
-# Export the SSH key
-cd terraform && terraform output -raw k3s_ssh_private_key > /tmp/k3s-key && chmod 600 /tmp/k3s-key
-cd ..
+With the new `provisioning.tf` logic, Terraform automatically triggers `setup-k3s.sh` internally, installs the entire Kubernetes Core, syncs the Helm charts, and authenticates ARC against your GitHub environment directly upon complete boot sequence!
 
-# Run the k3s installer
-bash scripts/setup-k3s.sh /tmp/k3s-key
-```
+You don't need to manually run post-deployment scripts anymore!
 
 ### 6. Get Kubeconfig
 
-```bash
-ssh -i /tmp/k3s-key ubuntu@192.168.0.210 'cat /etc/rancher/k3s/k3s.yaml' \
-  | sed 's/127.0.0.1/192.168.0.210/g' > ~/.kube/k3s-config
+The kubeconfig is automatically injected into your user directory `~/.kube/k3s-config` natively by the local-exec provisioners.
 
+```bash
 export KUBECONFIG=~/.kube/k3s-config
 kubectl get nodes
 ```
@@ -116,7 +110,7 @@ kubectl get nodes
 ## Project Structure
 
 ```
-homelab_proxmox/
+kubeforge_proxmox/
 ├── .gitignore
 ├── README.md
 ├── .instructions.md              # AI coding instructions
@@ -196,24 +190,7 @@ If your Proxmox is exposed via Cloudflare Tunnel with Zero Trust access policies
 
 ## Post-Deployment
 
-After k3s is running, you can install [Actions Runner Controller (ARC)](https://github.com/actions/actions-runner-controller) for self-hosted GitHub Actions runners:
-
-```bash
-export KUBECONFIG=~/.kube/k3s-config
-
-# Install ARC controller
-helm install arc \
-  --namespace arc-systems --create-namespace \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
-
-# Install runner scale set (repo-level)
-helm install arc-runner-set \
-  --namespace arc-runners --create-namespace \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-  --set githubConfigUrl="https://github.com/YOUR_ORG/YOUR_REPO" \
-  --set githubConfigSecret.github_token="ghp_YOUR_PAT" \
-  --set minRunners=1 --set maxRunners=5
-```
+All Post-Deployment ARC configurations for self-hosted GitHub Actions runners are now natively integrated. `terraform apply` will automatically inject Helm and boot up the Action Runner Controller based on the parameters (`github_config_url` and `github_pat`) in your `terraform.tfvars`.
 
 ## Teardown
 

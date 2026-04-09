@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TF_DIR="$SCRIPT_DIR/../terraform"
 
 SSH_KEY="${1:-}"
-MASTER_IP=$(cd "$TF_DIR" && terraform output -raw k3s_master_ip)
-WORKER_IPS=$(cd "$TF_DIR" && terraform output -json k3s_worker_ips | python3 -c "import sys,json;print(' '.join(json.load(sys.stdin)))")
+MASTER_IP="${MASTER_IP:-$(cd "$TF_DIR" && terraform output -raw k3s_master_ip)}"
+WORKER_IPS="${WORKER_IPS:-$(cd "$TF_DIR" && terraform output -json k3s_worker_ips | python3 -c "import sys,json;print(' '.join(json.load(sys.stdin)))")}"
 
 if [[ -z "$SSH_KEY" ]]; then
   SSH_KEY="$(mktemp)"

@@ -102,3 +102,14 @@ variable "k3s_dns_server" {
   type        = string
   default     = "192.168.0.1"
 }
+
+variable "github_config_url" {
+  description = "The URL of your GitHub Organization or Repository for ARC runners"
+  type        = string
+}
+
+variable "github_pat" {
+  description = "GitHub Personal Access Token for ARC authentication (ghp_...)"
+  type        = string
+  sensitive   = true
+}
